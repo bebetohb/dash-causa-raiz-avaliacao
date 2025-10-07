@@ -81,11 +81,11 @@ Isso abrirá automaticamente o dashboard no navegador, geralmente em:
 
 dashboard-causa-raiz/
 │
-├── dashboard_cr.py        # Código principal do dashboard
-├── pat.env                # Token local (ignorado pelo Git)
-├── requirements.txt       # Dependências do projeto
-├── .gitignore             # Ignora arquivos sensíveis
-└── README.md              # Este arquivo
+├── dashboard_cr.py # Código principal do dashboard
+├── pat.env # Token local (ignorado pelo Git)
+├── requirements.txt # Dependências do projeto
+├── .gitignore # Ignora arquivos sensíveis
+└── README.md # Este arquivo
 
 🤝 **Contribuições**
 
