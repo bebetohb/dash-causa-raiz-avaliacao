@@ -70,11 +70,11 @@ def get_work_items(organization, project, query_id, pat):
 st.set_page_config(page_title="Dashboard Causa Raiz", layout="wide")
 st.title("📊 Dashboard - Causa Raiz x Avaliação")
 
-with st.spinner("Carregando dados do Azure DevOps..."):
+with st.spinner("Aguarde: carregando dados do Azure DevOps..."):
     df = get_work_items(organization, project, query_id, pat)
 
 if df.empty:
-    st.warning("Nenhum work item encontrado. Verifique a query ou permissões.")
+    st.warning("Nenhum work item encontrado. Verifique a query do Azure DevOps ou permissões.")
     st.stop()
 
 # ------------------------------------------------------
@@ -151,7 +151,7 @@ else:
         st.info("Nenhuma causa raiz encontrada no período.")
 
     # 3️⃣ Top 5 Causa Raiz x Avaliação (ranking textual)
-    st.subheader("🏆 Top 5 Causa Raiz x Avaliação")
+    st.subheader("🏆 Top 5: Causa Raiz x Avaliação")
 
     top5 = df_periodo.groupby(
         ["Causa Raiz", "Avaliação"], dropna=False
@@ -160,7 +160,7 @@ else:
     if not top5.empty:
         ranking_text = ""
         for i, row in enumerate(top5.itertuples(index=False), 1):
-            ranking_text += f"{i}. {row[0]} (Causa Raiz): {row[1]} (Avaliação) ({row[2]})\n"
+            ranking_text += f"{i}. {row[0]} : {row[1]} -> ({row[2]})\n"
 
         st.markdown(f"```\n{ranking_text}\n```")
     else:
