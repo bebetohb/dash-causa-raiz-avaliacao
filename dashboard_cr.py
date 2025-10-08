@@ -8,10 +8,7 @@ import plotly.express as px
 # ⚙️ CONFIGURAÇÕES DO AZURE DEVOPS
 # ------------------------------------------------------
 
-organization = "" #ORGANIZACAO
-project = "" #PROJETO
-query_id = "" #ID DA QUERIE
-pat = "" #INSERIR A KEY
+
 
 # ------------------------------------------------------
 # 🔌 FUNÇÃO: Buscar Work Items
