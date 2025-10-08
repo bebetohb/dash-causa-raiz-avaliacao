@@ -9,11 +9,11 @@ REM Adiciona todos os arquivos
 git add .
 
 REM Commit padrão
-git commit -m "Atualizacao do projeto"
+git commit -m "Ajustes nos graficos"
 
 REM Define repositório remoto (troque pela sua URL)
 git remote remove origin
-git remote add origin https://github.com/bebetohb/dashboard-causa-raiz-avaliacao.git
+git remote add origin https://github.com/bebetohb/dash-causa-raiz-avaliacao.git
 
 REM Define branch principal
 git branch -M main
