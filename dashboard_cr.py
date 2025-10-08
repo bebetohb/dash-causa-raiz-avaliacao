@@ -8,10 +8,10 @@ import plotly.express as px
 # ⚙️ CONFIGURAÇÕES DO AZURE DEVOPS
 # ------------------------------------------------------
 
-organization = "" #ORGANIZACAO
-project = "" #PROJETO
-query_id = "" #ID DA QUERIE
-pat = "" #INSERIR A KEY
+organization = "neogrid"
+project = "Visibilidade"
+query_id = "6c42e1b2-a4e3-4e53-9278-5573ea769463"
+pat = ""  # ⚠️ Substitua por variável de ambiente em produção
 
 # ------------------------------------------------------
 # 🔌 FUNÇÃO: Buscar Work Items
@@ -31,7 +31,6 @@ def get_work_items(organization, project, query_id, pat):
     if not work_items:
         return pd.DataFrame()
 
-    # IDs em lotes (evita erro 414)
     ids = [str(item["id"]) for item in work_items]
     df_total = pd.DataFrame()
 
@@ -79,7 +78,7 @@ if df.empty:
     st.stop()
 
 # ------------------------------------------------------
-# 🗓️ FILTRO DE PERÍODO (INICIA NO DIA ATUAL)
+# 🗓️ FILTRO DE PERÍODO
 # ------------------------------------------------------
 for col in ["Created Date", "Closed Date"]:
     df[col] = pd.to_datetime(df[col], errors="coerce").dt.tz_localize(None)
@@ -118,15 +117,13 @@ else:
     st.subheader("📈 Análises do Período")
 
     # 1️⃣ Total de ESCs encerradas
-    # Substitui NaN por string vazia antes de aplicar o lower e o isin
     encerradas = df_periodo[
-    df_periodo["State"].fillna("").str.lower().isin(["closed", "done", "encerrada"])
-]
-
+        df_periodo["State"].fillna("").str.lower().isin(["closed", "done", "encerrada"])
+    ]
     total_encerradas = len(encerradas)
     st.markdown(f"**No período selecionado foram encerradas {total_encerradas} ESC(s).**")
 
-    # 2️⃣ Causa Raiz x Avaliação
+    # 2️⃣ Causa Raiz x Avaliação (gráfico de barras)
     causa_avaliacao = df_periodo.groupby(
         ["Causa Raiz", "Avaliação"], dropna=False
     ).size().reset_index(name="Total")
@@ -140,19 +137,31 @@ else:
             title="Causa Raiz x Avaliação",
             text="Total",
         )
-
-        # 🔹 Ajustes de layout para expandir o gráfico
         fig1.update_layout(
-            height=800,  # altura maior, semelhante à tabela
-            margin=dict(l=50, r=50, t=50, b=100),  # mais espaço nas margens
+            height=800,
+            margin=dict(l=50, r=50, t=50, b=100),
             xaxis_title="Causa Raiz",
             yaxis_title="Total de Chamados",
             legend_title="Avaliação",
-            bargap=0.25,  # afasta um pouco as barras
-            xaxis_tickangle=-30,  # inclina nomes se forem longos
+            bargap=0.25,
+            xaxis_tickangle=-30,
         )
-
         st.plotly_chart(fig1, use_container_width=True)
     else:
         st.info("Nenhuma causa raiz encontrada no período.")
 
+    # 3️⃣ Top 5 Causa Raiz x Avaliação (ranking textual)
+    st.subheader("🏆 Top 5 Causa Raiz x Avaliação")
+
+    top5 = df_periodo.groupby(
+        ["Causa Raiz", "Avaliação"], dropna=False
+    ).size().reset_index(name="Total").sort_values(by="Total", ascending=False).head(5)
+
+    if not top5.empty:
+        ranking_text = ""
+        for i, row in enumerate(top5.itertuples(index=False), 1):
+            ranking_text += f"{i}. {row[0]} (Causa Raiz): {row[1]} (Avaliação) ({row[2]})\n"
+
+        st.markdown(f"```\n{ranking_text}\n```")
+    else:
+        st.info("Nenhuma causa raiz encontrada para gerar o ranking.")
