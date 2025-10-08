@@ -8,10 +8,10 @@ import plotly.express as px
 # ⚙️ CONFIGURAÇÕES DO AZURE DEVOPS
 # ------------------------------------------------------
 
-organization = "" #ORGANIZACAO
-project = "" #PROJETO
-query_id = "" #ID DA QUERIE
-pat = "" #INSERIR A KEY
+organization = "neogrid"
+project = "Visibilidade"
+query_id = "6c42e1b2-a4e3-4e53-9278-5573ea769463"
+pat = "AFHy4KoVi635AOwxa9E2c13LUEDVf0dB0Y2vGyPuqSCMTuAfxUUKJQQJ99BJACAAAAAAD68UAAASAZDOy8PL"
 
 # ------------------------------------------------------
 # 🔌 FUNÇÃO: Buscar Work Items
@@ -69,7 +69,7 @@ def get_work_items(organization, project, query_id, pat):
 # 🧱 INTERFACE STREAMLIT
 # ------------------------------------------------------
 st.set_page_config(page_title="Dashboard Causa Raiz", layout="wide")
-st.title("📊 Dashboard - Causa Raiz das ESCs")
+st.title("📊 Dashboard - Causa Raiz x Avaliação")
 
 with st.spinner("Carregando dados do Azure DevOps..."):
     df = get_work_items(organization, project, query_id, pat)
@@ -140,26 +140,19 @@ else:
             title="Causa Raiz x Avaliação",
             text="Total",
         )
+
+        # 🔹 Ajustes de layout para expandir o gráfico
+        fig1.update_layout(
+            height=800,  # altura maior, semelhante à tabela
+            margin=dict(l=50, r=50, t=50, b=100),  # mais espaço nas margens
+            xaxis_title="Causa Raiz",
+            yaxis_title="Total de Chamados",
+            legend_title="Avaliação",
+            bargap=0.25,  # afasta um pouco as barras
+            xaxis_tickangle=-30,  # inclina nomes se forem longos
+        )
+
         st.plotly_chart(fig1, use_container_width=True)
     else:
         st.info("Nenhuma causa raiz encontrada no período.")
 
-    # 3️⃣ TOP 5 Causas Raiz
-    top5 = (
-        df_periodo.groupby("Causa Raiz")
-        .size()
-        .reset_index(name="Total")
-        .sort_values(by="Total", ascending=False)
-        .head(5)
-    )
-
-    if not top5.empty:
-        fig2 = px.pie(
-            top5,
-            names="Causa Raiz",
-            values="Total",
-            title="Top 5 Causas Raiz",
-        )
-        st.plotly_chart(fig2, use_container_width=True)
-    else:
-        st.info("Não há causas suficientes para gerar o Top 5.")
