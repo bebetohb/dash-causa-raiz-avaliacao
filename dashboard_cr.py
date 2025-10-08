@@ -8,10 +8,10 @@ import plotly.express as px
 # ⚙️ CONFIGURAÇÕES DO AZURE DEVOPS
 # ------------------------------------------------------
 
-organization = "neogrid"
-project = "Visibilidade"
-query_id = "6c42e1b2-a4e3-4e53-9278-5573ea769463"
-pat = "AFHy4KoVi635AOwxa9E2c13LUEDVf0dB0Y2vGyPuqSCMTuAfxUUKJQQJ99BJACAAAAAAD68UAAASAZDOy8PL"
+organization = "" #ORGANIZACAO
+project = "" #PROJETO
+query_id = "" #ID DA QUERIE
+pat = "" #INSERIR A KEY
 
 # ------------------------------------------------------
 # 🔌 FUNÇÃO: Buscar Work Items
