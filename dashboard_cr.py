@@ -1,21 +1,44 @@
+# ------------------------------------------------------
+# 📊 DASHBOARD: Causa Raiz x Avaliação (Azure DevOps)
+# ------------------------------------------------------
+# Autor: [Humberto Bravo]
+# Última atualização: [08/10/2025 21:30]
+# Descrição:
+#   Este dashboard consome dados do Azure DevOps para exibir análises
+#   sobre causas raiz e avaliações de ESCs, com filtros por período,
+#   métricas e gráficos interativos no Streamlit.
+# ------------------------------------------------------
+
+import os
 import requests
 import pandas as pd
 import streamlit as st
 import datetime as dt
 import plotly.express as px
+from dotenv import load_dotenv
 
-# ------------------------------------------------------
-# ⚙️ CONFIGURAÇÕES DO AZURE DEVOPS
-# ------------------------------------------------------
 
-organization = "neogrid"
-project = "Visibilidade"
-query_id = "6c42e1b2-a4e3-4e53-9278-5573ea769463"
-pat = ""  # ⚠️ Substitua por variável de ambiente em produção
+# ======================================================
+# 🔐 CONFIGURAÇÕES SEGURAS (carregadas do arquivo pat.env)
+# ======================================================
 
-# ------------------------------------------------------
-# 🔌 FUNÇÃO: Buscar Work Items
-# ------------------------------------------------------
+# Carrega as variáveis do arquivo 'pat.env' (não versionado no Git)
+load_dotenv("pat.env")
+
+organization = os.getenv("ORGANIZATION")
+project = os.getenv("PROJECT")
+query_id = os.getenv("QUERY_ID")
+pat = os.getenv("PAT")
+
+# Verifica se todas as variáveis foram carregadas corretamente
+if not all([organization, project, query_id, pat]):
+    st.error("⚠️ Erro: variáveis ausentes. Verifique o arquivo 'pat.env'.")
+    st.stop()
+
+
+# ======================================================
+# 🔌 FUNÇÃO: Buscar Work Items no Azure DevOps
+# ======================================================
 def get_work_items(organization, project, query_id, pat):
     base_url = f"https://dev.azure.com/{organization}/{project}/_apis/wit/wiql/{query_id}?api-version=7.0"
     headers = {"Content-Type": "application/json"}
@@ -31,6 +54,7 @@ def get_work_items(organization, project, query_id, pat):
     if not work_items:
         return pd.DataFrame()
 
+    # Busca detalhes em lotes (evita erro 414)
     ids = [str(item["id"]) for item in work_items]
     df_total = pd.DataFrame()
 
@@ -53,7 +77,9 @@ def get_work_items(organization, project, query_id, pat):
                     "ID": item.get("id"),
                     "Work Item Type": fields.get("System.WorkItemType"),
                     "Title": fields.get("System.Title"),
-                    "Assigned To": fields.get("System.AssignedTo", {}).get("displayName") if isinstance(fields.get("System.AssignedTo"), dict) else fields.get("System.AssignedTo"),
+                    "Assigned To": fields.get("System.AssignedTo", {}).get("displayName")
+                    if isinstance(fields.get("System.AssignedTo"), dict)
+                    else fields.get("System.AssignedTo"),
                     "State": fields.get("System.State"),
                     "Created Date": fields.get("System.CreatedDate"),
                     "Closed Date": fields.get("Microsoft.VSTS.Common.ClosedDate"),
@@ -64,12 +90,16 @@ def get_work_items(organization, project, query_id, pat):
 
     return df_total
 
-# ------------------------------------------------------
+
+# ======================================================
 # 🧱 INTERFACE STREAMLIT
-# ------------------------------------------------------
+# ======================================================
 st.set_page_config(page_title="Dashboard Causa Raiz", layout="wide")
 st.title("📊 Dashboard - Causa Raiz x Avaliação")
 
+# ------------------------------------------------------
+# 🔄 Carregamento inicial
+# ------------------------------------------------------
 with st.spinner("Aguarde: carregando dados do Azure DevOps..."):
     df = get_work_items(organization, project, query_id, pat)
 
@@ -160,7 +190,7 @@ else:
     if not top5.empty:
         ranking_text = ""
         for i, row in enumerate(top5.itertuples(index=False), 1):
-            ranking_text += f"{i}. {row[0]} : {row[1]} -> ({row[2]})\n"
+            ranking_text += f"{i}. {row[0]} : {row[1]} → ({row[2]})\n"
 
         st.markdown(f"```\n{ranking_text}\n```")
     else:

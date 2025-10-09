@@ -9,7 +9,7 @@ REM Adiciona todos os arquivos
 git add .
 
 REM Commit padrão
-git commit -m "Ajustes nos graficos"
+git commit -m "Ajustes de seguranca"
 
 REM Define repositório remoto (troque pela sua URL)
 git remote remove origin
