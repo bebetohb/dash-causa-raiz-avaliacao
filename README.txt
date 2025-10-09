@@ -51,7 +51,7 @@ Ele também foi hospedado no Streamlit Community Cloud: https://share.streamlit.
 
 🧠 **Como Rodar o Dashboard**
 
-1. Clone o projeto
+1. Clone o projeto.
 
 2. Baixe os pacotes Python que estão no arquivo requirements.txt
 
