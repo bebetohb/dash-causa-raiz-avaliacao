@@ -27,70 +27,54 @@ Este projeto é um dashboard interativo em **Python + Streamlit** que consome da
 
 ---
 
-## ⚙️ **Configuração do Projeto**
+## ⚙️ **Informações sobre o Projeto**
 
-### 1. Clonar o repositório
+O projeto está disponível no GitHub, repositório: https://github.com/bebetohb/dash-causa-raiz-avaliacao.git
 
-git clone https://github.com/seu-usuario/dashboard-causa-raiz.git
-cd dashboard-causa-raiz
+Ele também foi hospedado no Streamlit Community Cloud: https://share.streamlit.io/
 
-### 2. Criar e ativar o ambiente virtual
+⚠️ **Informações Importantes:**
 
-python -m venv venv
-venv\Scripts\activate    # Windows
-# ou
-source venv/bin/activate  # Linux/Mac
+1. É necessário uma Querie criada no Azure DevOps com os WorkItems, pois é dela que os dados serão carregados
 
-### 3. Instalar as dependências
+2. Token no Azure DevOps com permissão de Work Items → Read.
 
-pip install -r requirements.txt
+3. Arquivo nomeado com "pat.env" que irá armazenar os dados da conexão com a API
+   O arquivo NÃO pode subir para o GitHub, pois contém os dados do TOKEN!
+   
+   O arquivo deve ser criado na raiz do projeto e com o seguinte modelo:
 
-### Se você ainda não criou o arquivo requirements.txt, use:
-
-pip install streamlit requests pandas plotly python-dotenv
-pip freeze > requirements.txt
-
-### 4. Configuração do Token (PAT)
-
-Crie um arquivo chamado pat.env na raiz do projeto com o seguinte conteúdo:
-
-ini
-AZURE_PAT=seu_token_aqui
-
-⚠️ **Importante:**
-
-Este arquivo NÃO deve ser enviado ao GitHub (já está listado no .gitignore).
-
-Gere o token no Azure DevOps com permissão de Work Items → Read.
-
-O token tem validade configurável (ex: 30, 90, 180 dias).
-
-É necessário ter uma consulta pré-configurada no queries do Azure DevOps.
+	ORGANIZATION=
+	PROJECT=
+	QUERY_ID=
+	PAT=
 
 🧠 **Como Rodar o Dashboard**
 
-Dentro da pasta do projeto, rode o comando:
+1. Clone o projeto
+
+2. Baixe os pacotes Python que estão no arquivo requirements.txt
+
+3. Dentro da pasta do projeto, rode o comando(certificar-se que o arquivo pat.env está configurado):
 
 streamlit run dashboard_cr.py
 
-Isso abrirá automaticamente o dashboard no navegador, geralmente em:
-
-👉 http://localhost:8501
+Isso abrirá automaticamente o dashboard no navegador, geralmente em 👉 http://localhost:8501
 
 🧰 **Estrutura do Projeto**
 
 dashboard-causa-raiz/
 │
-├── dashboard_cr.py # Código principal do dashboard
-├── pat.env # Token local (ignorado pelo Git)
-├── requirements.txt # Dependências do projeto
-├── .gitignore # Ignora arquivos sensíveis
-└── README.md # Este arquivo
+├── .gitignore #Ignora arquivos sensíveis
+├── README.md #Este arquivo
+├── Rodar_Dashboard_-_Clique_Aqui.bat #Execução do dashboard direta(Altere o caminho)
+├── dashboard_cr.py #Código principal do dashboard
+└── requirements.txt #Dependências do projeto
 
 🤝 **Contribuições**
 
 Sinta-se à vontade para abrir issues e pull requests com melhorias ou correções.
-Este projeto foi criado para auxiliar times que utilizam o Azure DevOps no acompanhamento de Causas Raiz e Avaliações de ESCs.
+Este projeto foi criado para auxiliar times que utilizam o Azure DevOps no acompanhamento de Causas Raiz e Avaliações de ESC's.
 
 🧑‍💻 **Autor**
 
