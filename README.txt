@@ -70,6 +70,7 @@ dashboard-causa-raiz/
 ├── Rodar_Dashboard_-_Clique_Aqui.bat #Execução do dashboard direta(Altere o caminho)
 ├── dashboard_cr.py #Código principal do dashboard
 └── requirements.txt #Dependências do projeto
+└── pat.env.exemplo #Exemplo do pat
 
 🤝 **Contribuições**
 

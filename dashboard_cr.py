@@ -1,12 +1,8 @@
 # ------------------------------------------------------
 # 📊 DASHBOARD: Causa Raiz x Avaliação (Azure DevOps)
 # ------------------------------------------------------
-# Autor: [Humberto Bravo]
-# Última atualização: [08/10/2025 21:30]
-# Descrição:
-#   Este dashboard consome dados do Azure DevOps para exibir análises
-#   sobre causas raiz e avaliações de ESCs, com filtros por período,
-#   métricas e gráficos interativos no Streamlit.
+# Autor: Humberto Bravo
+# Última atualização: 28/10/2025
 # ------------------------------------------------------
 
 import os
@@ -16,24 +12,6 @@ import streamlit as st
 import datetime as dt
 import plotly.express as px
 from dotenv import load_dotenv
-
-
-# ======================================================
-# 🔐 CONFIGURAÇÕES SEGURAS (carregadas do arquivo pat.env)
-# ======================================================
-
-# Carrega as variáveis do arquivo 'pat.env' (não versionado no Git)
-load_dotenv("pat.env")
-
-organization = os.getenv("ORGANIZATION")
-project = os.getenv("PROJECT")
-query_id = os.getenv("QUERY_ID")
-pat = os.getenv("PAT")
-
-# Verifica se todas as variáveis foram carregadas corretamente
-if not all([organization, project, query_id, pat]):
-    st.error("⚠️ Erro: variáveis ausentes. Verifique o arquivo 'pat.env'.")
-    st.stop()
 
 
 # ======================================================
@@ -54,7 +32,6 @@ def get_work_items(organization, project, query_id, pat):
     if not work_items:
         return pd.DataFrame()
 
-    # Busca detalhes em lotes (evita erro 414)
     ids = [str(item["id"]) for item in work_items]
     df_total = pd.DataFrame()
 
@@ -71,24 +48,42 @@ def get_work_items(organization, project, query_id, pat):
         details_data = details_resp.json()
         for item in details_data.get("value", []):
             fields = item.get("fields", {})
-            df_total = pd.concat([
-                df_total,
-                pd.DataFrame([{
-                    "ID": item.get("id"),
-                    "Work Item Type": fields.get("System.WorkItemType"),
-                    "Title": fields.get("System.Title"),
-                    "Assigned To": fields.get("System.AssignedTo", {}).get("displayName")
+            df_total = pd.concat([df_total, pd.DataFrame([{
+                "ID": item.get("id"),
+                "Work Item Type": fields.get("System.WorkItemType"),
+                "Title": fields.get("System.Title"),
+                "Assigned To": (
+                    fields.get("System.AssignedTo", {}).get("displayName")
                     if isinstance(fields.get("System.AssignedTo"), dict)
-                    else fields.get("System.AssignedTo"),
-                    "State": fields.get("System.State"),
-                    "Created Date": fields.get("System.CreatedDate"),
-                    "Closed Date": fields.get("Microsoft.VSTS.Common.ClosedDate"),
-                    "Causa Raiz": fields.get("Custom.dny_Causa_raiz"),
-                    "Avaliação": fields.get("Custom.df595db0-b245-4da1-8c98-45ab05ed33cf")
-                }])
-            ], ignore_index=True)
+                    else fields.get("System.AssignedTo")
+                ),
+                "State": fields.get("System.State"),
+                "Created Date": fields.get("System.CreatedDate"),
+                "Closed Date": fields.get("Microsoft.VSTS.Common.ClosedDate"),
+                "Causa Raiz": fields.get("Custom.dny_Causa_raiz"),
+                "Avaliação": fields.get("Custom.df595db0-b245-4da1-8c98-45ab05ed33cf")
+            }])], ignore_index=True)
 
     return df_total
+
+
+# ======================================================
+# 🔐 CONFIGURAÇÕES SEGURAS (carregadas do arquivo pat.env)
+# ======================================================
+load_dotenv("pat.env")
+
+organization = os.getenv("ORGANIZATION")
+pat = os.getenv("PAT")
+
+# Projetos e Queries
+project1 = os.getenv("PROJECT1")
+query_id1 = os.getenv("QUERY_ID1")
+project2 = os.getenv("PROJECT2")
+query_id2 = os.getenv("QUERY_ID2")
+
+if not all([organization, pat, project1, query_id1, project2, query_id2]):
+    st.error("⚠️ Erro: variáveis ausentes. Verifique o arquivo 'pat.env'.")
+    st.stop()
 
 
 # ======================================================
@@ -100,16 +95,23 @@ st.title("📊 Dashboard - Causa Raiz x Avaliação")
 # ------------------------------------------------------
 # 🔄 Carregamento inicial
 # ------------------------------------------------------
-with st.spinner("Aguarde: carregando dados do Azure DevOps..."):
-    df = get_work_items(organization, project, query_id, pat)
+with st.spinner("Aguarde: carregando dados dos projetos do Azure DevOps..."):
+    df1 = get_work_items(organization, project1, query_id1, pat)
+    df1["Origem"] = "Visibilidade"
+
+    df2 = get_work_items(organization, project2, query_id2, pat)
+    df2["Origem"] = "BU Inteligência Colaborativa"
+
+    df = pd.concat([df1, df2], ignore_index=True)
 
 if df.empty:
-    st.warning("Nenhum work item encontrado. Verifique a query do Azure DevOps ou permissões.")
+    st.warning("Nenhum work item encontrado nos projetos informados.")
     st.stop()
 
-# ------------------------------------------------------
+
+# ======================================================
 # 🗓️ FILTRO DE PERÍODO
-# ------------------------------------------------------
+# ======================================================
 for col in ["Created Date", "Closed Date"]:
     df[col] = pd.to_datetime(df[col], errors="coerce").dt.tz_localize(None)
 
@@ -126,37 +128,25 @@ df_periodo = df[
     (df["Created Date"] <= pd.to_datetime(end_date))
 ].copy()
 
-# ------------------------------------------------------
-# 📋 GRID ROLÁVEL
-# ------------------------------------------------------
+
+# ======================================================
+# 📋 GRID ROLÁVEL + GRÁFICOS
+# ======================================================
 st.subheader("📋 Work Items no Período")
 
 if df_periodo.empty:
     st.warning("Nenhum Work Item encontrado para o período selecionado.")
 else:
-    st.dataframe(
-        df_periodo,
-        use_container_width=True,
-        height=350,
-    )
+    st.dataframe(df_periodo, use_container_width=True, height=350)
 
-    # ------------------------------------------------------
-    # 📈 MÉTRICAS E GRÁFICOS
-    # ------------------------------------------------------
     st.divider()
     st.subheader("📈 Análises do Período")
 
-    # 1️⃣ Total de ESCs encerradas
-    encerradas = df_periodo[
-        df_periodo["State"].fillna("").str.lower().isin(["closed", "done", "encerrada"])
-    ]
+    encerradas = df_periodo[df_periodo["State"].fillna("").str.lower().isin(["closed", "done", "encerrada"])]
     total_encerradas = len(encerradas)
     st.markdown(f"**No período selecionado foram encerradas {total_encerradas} ESC(s).**")
 
-    # 2️⃣ Causa Raiz x Avaliação (gráfico de barras)
-    causa_avaliacao = df_periodo.groupby(
-        ["Causa Raiz", "Avaliação"], dropna=False
-    ).size().reset_index(name="Total")
+    causa_avaliacao = df_periodo.groupby(["Causa Raiz", "Avaliação"], dropna=False).size().reset_index(name="Total")
 
     if not causa_avaliacao.empty:
         fig1 = px.bar(
@@ -180,12 +170,14 @@ else:
     else:
         st.info("Nenhuma causa raiz encontrada no período.")
 
-    # 3️⃣ Top 5 Causa Raiz x Avaliação (ranking textual)
     st.subheader("🏆 Top 5: Causa Raiz x Avaliação")
-
-    top5 = df_periodo.groupby(
-        ["Causa Raiz", "Avaliação"], dropna=False
-    ).size().reset_index(name="Total").sort_values(by="Total", ascending=False).head(5)
+    top5 = (
+        df_periodo.groupby(["Causa Raiz", "Avaliação"], dropna=False)
+        .size()
+        .reset_index(name="Total")
+        .sort_values(by="Total", ascending=False)
+        .head(5)
+    )
 
     if not top5.empty:
         ranking_text = ""
