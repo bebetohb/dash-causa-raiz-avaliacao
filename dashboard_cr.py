@@ -12,6 +12,9 @@ import streamlit as st
 import datetime as dt
 import plotly.express as px
 from dotenv import load_dotenv
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from concurrent.futures import ThreadPoolExecutor
 
 
 # ======================================================
@@ -19,7 +22,7 @@ from dotenv import load_dotenv
 # ======================================================
 @st.cache_data(
     ttl=300,
-    show_spinner="Carregando ESC's por período..."
+    show_spinner="🔄 Atualizando ESC's do Azure DevOps..."
 )
 def get_work_items(
     organization,
@@ -27,56 +30,150 @@ def get_work_items(
     query_id,
     pat
 ):
-    base_url = f"https://dev.azure.com/{organization}/{project}/_apis/wit/wiql/{query_id}?api-version=7.0"
-    headers = {"Content-Type": "application/json"}
-    response = requests.get(base_url, headers=headers, auth=("", pat))
+
+    base_url = (
+        f"https://dev.azure.com/"
+        f"{organization}/{project}"
+        f"/_apis/wit/wiql/{query_id}"
+        f"?api-version=7.0"
+    )
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    response = requests.get(
+        base_url,
+        headers=headers,
+        auth=("", pat),
+        timeout=60
+    )
 
     if response.status_code != 200:
-        st.error(f"Erro ao buscar work items: {response.status_code}")
-        st.text(response.text)
+        st.error(
+            f"Erro ao buscar Work Items: "
+            f"{response.status_code}"
+        )
         return pd.DataFrame()
 
-    data = response.json()
-    work_items = data.get("workItems", [])
+    work_items = response.json().get(
+        "workItems",
+        []
+    )
+
     if not work_items:
         return pd.DataFrame()
 
-    ids = [str(item["id"]) for item in work_items]
-    df_total = pd.DataFrame()
+    ids = [str(x["id"]) for x in work_items]
+
+    # ==========================================
+    # Acumula TODOS os registros aqui
+    # ==========================================
+    registros = []
 
     for i in range(0, len(ids), 100):
-        batch = ids[i:i+100]
+
+        batch = ids[i:i + 100]
+
         ids_str = ",".join(batch)
-        url_details = f"https://dev.azure.com/{organization}/_apis/wit/workitems?ids={ids_str}&$expand=Fields&api-version=7.0"
-        details_resp = requests.get(url_details, headers=headers, auth=("", pat))
+
+        url_details = (
+            f"https://dev.azure.com/"
+            f"{organization}"
+            f"/_apis/wit/workitems"
+            f"?ids={ids_str}"
+            f"&$expand=Fields"
+            f"&api-version=7.0"
+        )
+
+        details_resp = requests.get(
+            url_details,
+            headers=headers,
+            auth=("", pat),
+            timeout=60
+        )
 
         if details_resp.status_code != 200:
+
             st.warning(
-    f"Erro ao buscar detalhes: {details_resp.status_code} | IDs {batch[0]} até {batch[-1]}"
-            )                  
+                f"Erro {details_resp.status_code} "
+                f"ao buscar lote "
+                f"{batch[0]} até {batch[-1]}"
+            )
+
             continue
 
         details_data = details_resp.json()
-        for item in details_data.get("value", []):
-            fields = item.get("fields", {})
-            df_total = pd.concat([df_total, pd.DataFrame([{
-                "ID": item.get("id"),
-                "Work Item Type": fields.get("System.WorkItemType"),
-                "Title": fields.get("System.Title"),
-                "Assigned To": (
-                    fields.get("System.AssignedTo", {}).get("displayName")
-                    if isinstance(fields.get("System.AssignedTo"), dict)
-                    else fields.get("System.AssignedTo")
-                ),
-                "State": fields.get("System.State"),
-                "Created Date": fields.get("System.CreatedDate"),
-                "Closed Date": fields.get("Microsoft.VSTS.Common.ClosedDate"),
-                "Causa Raiz": fields.get("Custom.dny_Causa_raiz"),
-                "Avaliação": fields.get("Custom.df595db0-b245-4da1-8c98-45ab05ed33cf"),
-                "Area Path": fields.get("System.AreaPath")     
-            }])], ignore_index=True)
 
-    return df_total
+        for item in details_data.get("value", []):
+
+            fields = item.get("fields", {})
+
+            registros.append({
+
+                "ID": item.get("id"),
+
+                "Work Item Type":
+                    fields.get(
+                        "System.WorkItemType"
+                    ),
+
+                "Title":
+                    fields.get(
+                        "System.Title"
+                    ),
+
+                "Assigned To":
+                    (
+                        fields.get(
+                            "System.AssignedTo",
+                            {}
+                        ).get(
+                            "displayName"
+                        )
+                        if isinstance(
+                            fields.get(
+                                "System.AssignedTo"
+                            ),
+                            dict
+                        )
+                        else fields.get(
+                            "System.AssignedTo"
+                        )
+                    ),
+
+                "State":
+                    fields.get(
+                        "System.State"
+                    ),
+
+                "Created Date":
+                    fields.get(
+                        "System.CreatedDate"
+                    ),
+
+                "Closed Date":
+                    fields.get(
+                        "Microsoft.VSTS.Common.ClosedDate"
+                    ),
+
+                "Causa Raiz":
+                    fields.get(
+                        "Custom.dny_Causa_raiz"
+                    ),
+
+                "Avaliação":
+                    fields.get(
+                        "Custom.df595db0-b245-4da1-8c98-45ab05ed33cf"
+                    ),
+
+                "Area Path":
+                    fields.get(
+                        "System.AreaPath"
+                    )
+            })
+
+    return pd.DataFrame(registros)
 
 
 # ======================================================
@@ -105,12 +202,15 @@ st.title("📊 Dashboard - Causa Raiz x Avaliação")
 # ------------------------------------------------------
 # 🔄 Carregamento inicial
 # ------------------------------------------------------
-with st.spinner("Aguarde: carregando dados dos projetos do Azure DevOps..."):
+with st.spinner("Aguarde: Consultando Azure DevOps..."):
 
-    ultima_atualizacao = dt.datetime.now()
+    ultima_atualizacao = datetime.now(
+    ZoneInfo("America/Sao_Paulo")
+    )
 
     st.caption(
-    f"Última atualização: {ultima_atualizacao:%d/%m/%Y %H:%M}"
+    f"Última atualização: "
+    f"{ultima_atualizacao:%d/%m/%Y %H:%M}"
     )
 
     st.divider()
@@ -159,11 +259,11 @@ for col in ["Created Date", "Closed Date"]:
     df[col] = pd.to_datetime(df[col], errors="coerce").dt.tz_localize(None)
 
 hoje = dt.date.today()
-inicio_padrao = hoje - dt.timedelta(days=30)
+inicio_padrao = hoje.replace(day=1)
 
 with st.expander("📅 Filtros", expanded=True):
 
-    col1, col2, col3 = st.columns([2, 2, 1])
+    col1, col2, col3 = st.columns([2,2,1])
 
     with col1:
         start_date, end_date = st.date_input(
@@ -182,14 +282,19 @@ with st.expander("📅 Filtros", expanded=True):
         st.write("")
         st.write("")
 
-        if st.button("🔄 Atualizar Dados"):
+        if st.button("🔄 Atualizar"):
             st.cache_data.clear()
             st.rerun()
 
-df_periodo = df[
-    (df["Created Date"] >= pd.to_datetime(start_date)) &
-    (df["Created Date"] <= pd.to_datetime(end_date))
+df_encerradas = df[
+    df["Closed Date"].notna()
 ].copy()
+
+df_periodo = df_encerradas[
+    (df_encerradas["Closed Date"] >= pd.to_datetime(start_date))
+    &
+    (df_encerradas["Closed Date"] <= pd.to_datetime(end_date))
+]
 
 df_periodo = df_periodo[
     df_periodo["Produto"].isin(produtos)
