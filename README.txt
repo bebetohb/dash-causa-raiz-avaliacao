@@ -45,9 +45,10 @@ Ele também foi hospedado no Streamlit Community Cloud: https://share.streamlit.
    O arquivo deve ser criado na raiz do projeto e com o seguinte modelo:
 
 	ORGANIZATION=
-	PROJECT=
-	QUERY_ID=
 	PAT=
+	# Projeto 1
+	PROJECT1=
+	QUERY_ID1=
 
 🧠 **Como Rodar o Dashboard**
 
